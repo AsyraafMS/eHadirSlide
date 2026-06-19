@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eHadir@SMKBN — Smart Attendance Management System</title>
+<style>
+  :root {
+    --bg-deep: #060918;
+    --bg-surface: #0d112b;
+    --bg-card: #151a3d;
+    --bg-card-hover: #1c2354;
+    --primary: #3b82f6;
+    --primary-glow: #3b82f680;
+    --accent: #22d3ee;
+    --accent-glow: #22d3ee66;
+    --success: #10b981;
+    --amber: #f59e0b;
+    --rose: #f43f5e;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border-subtle: #ffffff0d;
+    --border-card: #ffffff14;
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --radius-xl: 32px;
+    --shadow-glow: 0 0 60px -20px var(--primary-glow);
+    --transition-fast: 180ms ease-out;
+    --transition-smooth: 400ms cubic-bezier(0.22, 1, 0.36, 1);
+    --transition-bounce: 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  html, body {
+    width:100%; height:100%;
+    overflow:hidden;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .presentation {
+    width:100%; height:100%;
+    position:relative;
+  }
+
+  /* ---- FIXED LOGO ---- */
+  .fixed-logo {
+    position:fixed; top:24px; left:40px; z-index:20;
+    display:flex; align-items:center; gap:10px;
+    pointer-events:none;
+  }
+  .fixed-logo img {
+    height:48px; width:auto;
+    filter: drop-shadow(0 0 12px rgba(34,211,238,0.3));
+  }
+  .fixed-logo .logo-text {
+    font-size:14px; font-weight:700; color:var(--text-primary);
+    letter-spacing:-0.01em;
+  }
+  .fixed-logo .logo-text .accent { color:var(--accent); }
+
+  @media (max-width: 768px) {
+    .fixed-logo { top:16px; left:20px; }
+    .fixed-logo img { height:36px; }
+    .fixed-logo .logo-text { font-size:13px; }
+    .slide-counter { top:20px; right:20px; }
+  }
+
+  /* ---- GRID BACKGROUND ---- */
+  .bg-grid {
+    position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.04;
+    background-image: 
+      linear-gradient(rgba(59,130,246,.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,.3) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .bg-orb {
+    position:fixed; border-radius:50%; filter:blur(120px); pointer-events:none; z-index:0;
+  }
+  .bg-orb--1 { width:600px; height:600px; background:var(--primary); opacity:0.06; top:-200px; right:-100px; }
+  .bg-orb--2 { width:500px; height:500px; background:var(--accent); opacity:0.04; bottom:-200px; left:-100px; }
+
+  /* ---- SLIDES ---- */
+  .slides-container {
+    width:100%; height:100%; position:relative; z-index:1;
+  }
+  .slide {
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding: 60px 80px;
+    opacity:0; transform: translateY(30px);
+    transition: opacity var(--transition-smooth), transform var(--transition-smooth);
+    pointer-events:none;
+  }
+  .slide.active {
+    opacity:1; transform:translateY(0);
+    pointer-events:auto;
+  }
+  .slide.exit {
+    opacity:0; transform:translateY(-20px);
+  }
+
+  .slide-inner { max-width:1000px; width:100%; }
+
+  /* ---- TITLE SLIDE ---- */
+  .title-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 20px; border-radius:100px;
+    background:var(--bg-card); border:1px solid var(--border-card);
+    font-size:14px; color:var(--accent);
+    margin-bottom:32px;
+    animation: fadeInUp 0.6s ease-out;
+  }
+  .title-badge .dot { width:8px; height:8px; border-radius:50%; background:var(--accent); animation: pulse-dot 2s infinite; }
+
+  .title-main {
+    font-size:clamp(42px, 6vw, 72px); font-weight:800; line-height:1.1;
+    letter-spacing:-0.03em; margin-bottom:20px;
+    animation: fadeInUp 0.6s 0.1s ease-out both;
+  }
+  .title-main .accent { color:var(--accent); }
+  .title-main .primary { color:var(--primary); }
+
+  .title-sub {
+    font-size:clamp(18px, 2.2vw, 24px); color:var(--text-secondary);
+    font-weight:400; max-width:600px;
+    animation: fadeInUp 0.6s 0.2s ease-out both;
+  }
+
+  .title-stat-row {
+    display:flex; gap:40px; margin-top:48px;
+    animation: fadeInUp 0.6s 0.35s ease-out both;
+  }
+  .title-stat {
+    text-align:center;
+  }
+  .title-stat .num { font-size:36px; font-weight:800; background:linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .title-stat .lbl { font-size:13px; color:var(--text-muted); margin-top:4px; text-transform:uppercase; letter-spacing:0.08em; }
+
+  /* ---- SECTION HEADER ---- */
+  .section-tag {
+    font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.12em;
+    color:var(--accent); margin-bottom:20px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .section-tag::after { content:''; width:32px; height:1px; background:var(--accent); opacity:0.4; }
+  .section-title {
+    font-size:clamp(28px, 3.6vw, 44px); font-weight:700;
+    line-height:1.2; margin-bottom:16px;
+    letter-spacing:-0.02em;
+  }
+  .section-desc {
+    font-size:16px; color:var(--text-secondary); line-height:1.6; max-width:640px;
+  }
+
+  /* ---- CARDS ---- */
+  .cards-grid {
+    display:grid; gap:20px; margin-top:40px;
+  }
+  .cards-grid--2 { grid-template-columns:1fr 1fr; }
+  .cards-grid--3 { grid-template-columns:1fr 1fr 1fr; }
+  .cards-grid--4 { grid-template-columns:1fr 1fr 1fr 1fr; }
+
+  .card {
+    background:var(--bg-card); border:1px solid var(--border-card);
+    border-radius:var(--radius-md); padding:28px 24px;
+    transition: all var(--transition-fast);
+    position:relative; overflow:hidden;
+  }
+  .card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, var(--primary), var(--accent));
+    opacity:0; transition:opacity var(--transition-fast);
+  }
+  .card:hover::before { opacity:1; }
+  .card:hover {
+    background:var(--bg-card-hover);
+    transform:translateY(-3px);
+    box-shadow:0 16px 48px -16px rgba(59,130,246,0.18);
+  }
+  .card-icon {
+    width:44px; height:44px; border-radius:var(--radius-sm);
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:16px;
+    font-size:20px;
+  }
+  .card-icon--blue { background:rgba(59,130,246,0.15); color:var(--primary); }
+  .card-icon--teal { background:rgba(34,211,238,0.15); color:var(--accent); }
+  .card-icon--emerald { background:rgba(16,185,129,0.15); color:var(--success); }
+  .card-icon--amber { background:rgba(245,158,11,0.15); color:var(--amber); }
+  .card-icon--rose { background:rgba(244,63,94,0.15); color:var(--rose); }
+
+  .card-title { font-size:17px; font-weight:700; margin-bottom:8px; }
+  .card-desc { font-size:14px; color:var(--text-secondary); line-height:1.55; }
+
+  /* ---- PROBLEM SLIDE ---- */
+  .problem-cards { display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; margin-top:40px; }
+  .problem-card {
+    background:var(--bg-card); border:1px solid var(--border-card);
+    border-radius:var(--radius-md); padding:32px 24px;
+    text-align:center; position:relative; overflow:hidden;
+  }
+  .problem-card .icon-wrap {
+    width:56px; height:56px; margin:0 auto 20px;
+    border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center;
+    font-size:24px;
+    background:rgba(244,63,94,0.12); color:var(--rose);
+  }
+  .problem-card h4 { font-size:16px; font-weight:700; margin-bottom:8px; }
+  .problem-card p { font-size:13px; color:var(--text-muted); line-height:1.5; }
+
+  /* ---- FLOW STEPS ---- */
+  .flow-steps {
+    display:flex; align-items:center; justify-content:center;
+    gap:16px; margin-top:40px; flex-wrap:wrap;
+  }
+  .flow-step {
+    background:var(--bg-card); border:1px solid var(--border-card);
+    border-radius:var(--radius-md); padding:20px 28px;
+    text-align:center; min-width:160px;
+  }
+  .flow-step .step-num {
+    width:36px; height:36px; border-radius:50%;
+    background:var(--primary); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:700; margin:0 auto 12px;
+  }
+  .flow-step .step-label { font-size:14px; font-weight:600; }
+  .flow-arrow {
+    color:var(--text-muted); font-size:20px;
+    display:flex; align-items:center;
+  }
+
+  /* ---- INNOVATION CARDS ---- */
+  .innovation-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:36px; }
+  .innovation-item {
+    display:flex; gap:16px; align-items:flex-start;
+    background:var(--bg-card); border:1px solid var(--border-card);
+    border-radius:var(--radius-md); padding:24px;
+  }
+  .innovation-item .inx-icon {
+    width:44px; height:44px; border-radius:var(--radius-sm);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; flex-shrink:0;
+    background:rgba(59,130,246,0.15); color:var(--primary);
+  }
+  .innovation-item h4 { font-size:15px; font-weight:700; margin-bottom:4px; }
+  .innovation-item p { font-size:13px; color:var(--text-secondary); line-height:1.45; }
+
+  /* ---- IMPACT CARDS ---- */
+  .impact-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:36px; }
+  .impact-card {
+    background:var(--bg-card); border:1px solid var(--border-card);
+    border-radius:var(--radius-md); padding:28px 24px; text-align:center;
+    transition: all var(--transition-fast);
+  }
+  .impact-card:hover { transform:translateY(-2px); box-shadow:0 12px 32px -12px rgba(34,211,238,0.12); }
+  .impact-card .impact-icon {
+    width:48px; height:48px; border-radius:var(--radius-sm);
+    display:flex; align-items:center; justify-content:center; margin:0 auto 16px;
+    font-size:22px;
+  }
+  .impact-card h4 { font-size:16px; font-weight:700; margin-bottom:6px; }
+  .impact-card p { font-size:13px; color:var(--text-secondary); line-height:1.5; }
+
+  /* ---- METHODOLOGY & COMMERCIAL ---- */
+  .method-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:36px; }
+  .method-card {
+    background:var(--bg-card); border:1px solid var(--border-card);
+    border-radius:var(--radius-md); padding:28px;
+  }
+  .method-card .method-icon {
+    width:44px; height:44px; border-radius:var(--radius-sm);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; margin-bottom:16px;
+  }
+  .method-card h4 { font-size:18px; font-weight:700; margin-bottom:12px; }
+  .method-card ul { list-style:none; }
+  .method-card li {
+    font-size:14px; color:var(--text-secondary); padding:7px 0;
+    padding-left:20px; position:relative; line-height:1.45;
+  }
+  .method-card li::before {
+    content:''; position:absolute; left:0; top:15px;
+    width:6px; height:6px; border-radius:50%; background:var(--accent);
+  }
+
+  /* ---- THANK YOU ---- */
+  .thank-you h2 {
+    font-size:clamp(38px, 5vw, 60px); font-weight:800;
+    letter-spacing:-0.03em; margin-bottom:16px;
+  }
+  .thank-you h2 .accent { color:var(--accent); }
+  .thank-you p { font-size:18px; color:var(--text-secondary); }
+
+  /* ---- PROGRESS BAR ---- */
+  .progress-bar-wrap {
+    position:fixed; bottom:0; left:0; right:0; z-index:10;
+    display:flex; gap:6px; padding:16px 32px 24px;
+    justify-content:center;
+  }
+  .progress-dot {
+    width:10px; height:10px; border-radius:50%;
+    background:var(--border-card);
+    transition: all var(--transition-smooth);
+    cursor:pointer;
+  }
+  .progress-dot.active { background:var(--primary); width:32px; border-radius:100px; box-shadow:0 0 12px var(--primary-glow); }
+  .progress-dot.done { background:var(--accent); opacity:0.6; }
+
+  .slide-counter {
+    position:fixed; top:32px; right:40px; z-index:10;
+    font-size:13px; color:var(--text-muted); font-weight:500;
+    letter-spacing:0.04em;
+  }
+
+  /* ---- ANIMATIONS ---- */
+  @keyframes pulse-dot {
+    0%, 100% { opacity:1; }
+    50% { opacity:0.3; }
+  }
+  @keyframes fadeInUp {
+    from { opacity:0; transform:translateY(20px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+  @keyframes fadeInScale {
+    from { opacity:0; transform:scale(0.92); }
+    to { opacity:1; transform:scale(1); }
+  }
+
+  .slide.active .animate-stagger > * { opacity:0; animation: fadeInUp 0.55s ease-out forwards; }
+  .slide.active .animate-stagger > *:nth-child(1) { animation-delay:0.1s; }
+  .slide.active .animate-stagger > *:nth-child(2) { animation-delay:0.2s; }
+  .slide.active .animate-stagger > *:nth-child(3) { animation-delay:0.3s; }
+  .slide.active .animate-stagger > *:nth-child(4) { animation-delay:0.4s; }
+  .slide.active .animate-stagger > *:nth-child(5) { animation-delay:0.5s; }
+  .slide.active .animate-stagger > *:nth-child(6) { animation-delay:0.6s; }
+  .slide.active .animate-stagger > *:nth-child(7) { animation-delay:0.7s; }
+  .slide.active .animate-stagger > *:nth-child(8) { animation-delay:0.8s; }
+
+  /* ---- RESPONSIVE ---- */
+  @media (max-width: 768px) {
+    .slide { padding:32px 24px; }
+    .cards-grid--2, .cards-grid--3, .cards-grid--4 { grid-template-columns:1fr; }
+    .problem-cards { grid-template-columns:1fr; }
+    .innovation-grid { grid-template-columns:1fr; }
+    .impact-grid { grid-template-columns:1fr; }
+    .method-grid { grid-template-columns:1fr; }
+    .flow-steps { flex-direction:column; }
+    .flow-arrow { transform:rotate(90deg); }
+    .title-stat-row { flex-wrap:wrap; gap:24px; }
+  }
+
+  /* ---- REDUCED MOTION ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
+  }
+
+  /* ---- HERO LOGO ---- */
+  .hero-logo {
+    display:block; margin:0 auto 32px;
+    width:clamp(90px, 12vw, 140px); height:auto;
+    filter:drop-shadow(0 0 32px rgba(34,211,238,0.35));
+    animation: fadeInScale 0.7s ease-out both;
+  }
+
+  /* ---- SVG ICON STYLES ---- */
+  .svg-icon { width:24px; height:24px; fill:currentColor; }
+  .svg-icon--sm { width:20px; height:20px; }
+  .svg-icon--lg { width:32px; height:32px; }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb--1"></div>
+<div class="bg-orb bg-orb--2"></div>
+
+<div class="fixed-logo">
+  <img src="SMKBN_Transparent.png" alt="eHadir@SMKBN Logo" />
+</div>
+
+<div class="presentation" id="presentation">
+  <!-- Slide counter -->
+  <div class="slide-counter" id="slideCounter">1 / 10</div>
+
+  <!-- Progress dots -->
+  <div class="progress-bar-wrap" id="progressBar"></div>
+
+  <div class="slides-container" id="slidesContainer">
+
+    <!-- SLIDE 0: TITLE -->
+    <div class="slide active">
+      <div class="slide-inner">
+        <img class="hero-logo" src="SMKBN_Transparent.png" alt="eHadir@SMKBN Logo" />
+        <div class="title-badge">
+          <span class="dot"></span> Innovation in Education Technology
+        </div>
+        <h1 class="title-main">
+          <span class="accent">eHadir</span><span class="primary">@SMKBN</span>
+        </h1>
+        <p class="title-sub">
+          A mobile application using GPS geofencing technology to automate staff attendance and leave management.
+          Accurate, real-time, and secure.
+        </p>
+        <div class="title-stat-row">
+          <div class="title-stat"><div class="num">10,231+</div><div class="lbl">Registered Schools</div></div>
+          <div class="title-stat"><div class="num">100%</div><div class="lbl">Digital Process</div></div>
+          <div class="title-stat"><div class="num">Real‑Time</div><div class="lbl">Monitoring</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 1: PROBLEM STATEMENT -->
+    <div class="slide">
+      <div class="slide-inner animate-stagger">
+        <div>
+          <div class="section-tag">Problem Statement</div>
+          <h2 class="section-title">Manual Attendance Is Holding Schools Back</h2>
+          <p class="section-desc">Traditional attendance and leave management creates inefficiencies that impact both staff and administrators.</p>
+        </div>
+        <div class="problem-cards">
+          <div class="problem-card">
+            <div class="icon-wrap">
+              <svg class="svg-icon svg-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <h4>Time Consuming</h4>
+            <p>Manual roll calls and paper-based attendance sheets waste valuable teaching time every day.</p>
+          </div>
+          <div class="problem-card">
+            <div class="icon-wrap">
+              <svg class="svg-icon svg-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </div>
+            <h4>Prone to Human Error</h4>
+            <p>Manual data entry leads to mistakes in attendance records and reporting inaccuracies.</p>
+          </div>
+          <div class="problem-card">
+            <div class="icon-wrap">
+              <svg class="svg-icon svg-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <h4>Proxy &amp; Buddy Punching</h4>
+            <p>Without identity verification, colleagues can sign in on behalf of absent staff members.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: USEFULNESS -->
+    <div class="slide">
+      <div class="slide-inner animate-stagger">
+        <div>
+          <div class="section-tag">Usefulness</div>
+          <h2 class="section-title">Transforming School Operations</h2>
+          <p class="section-desc">eHadir@SMKBN brings automation, accuracy, and transparency to everyday school management.</p>
+        </div>
+        <div class="cards-grid cards-grid--3">
+          <div class="card">
+            <div class="card-icon card-icon--teal">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div class="card-title">Automated Attendance</div>
+            <div class="card-desc">GPS-based check-ins eliminate manual roll calls, letting teachers focus on what matters.</div>
+          </div>
+          <div class="card">
+            <div class="card-icon card-icon--blue">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div class="card-title">Real-Time Monitoring</div>
+            <div class="card-desc">Administrators view live attendance data and generate reports instantly from any device.</div>
+          </div>
+          <div class="card">
+            <div class="card-icon card-icon--emerald">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <div class="card-title">Digital Leave</div>
+            <div class="card-desc">End-to-end digital leave application and approval workflow replaces paper forms.</div>
+          </div>
+          <div class="card">
+            <div class="card-icon card-icon--blue">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            </div>
+            <div class="card-title">GPS Accuracy</div>
+            <div class="card-desc">Geofencing ensures attendance is only recorded when staff are physically within school perimeter.</div>
+          </div>
+          <div class="card">
+            <div class="card-icon card-icon--amber">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div class="card-title">Secure &amp; Verified</div>
+            <div class="card-desc">Multi-layer validation prevents fraud while protecting staff privacy and data integrity.</div>
+          </div>
+          <div class="card">
+            <div class="card-icon card-icon--emerald">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div class="card-title">Saves Time</div>
+            <div class="card-desc">Automation reduces administrative workload so staff can invest more time in students.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: OBJECTIVES -->
+    <div class="slide">
+      <div class="slide-inner animate-stagger">
+        <div>
+          <div class="section-tag">Objectives</div>
+          <h2 class="section-title">What We Aim to Achieve</h2>
+          <p class="section-desc">Clear goals driving the development and deployment of eHadir@SMKBN.</p>
+        </div>
+        <div class="cards-grid cards-grid--2" style="margin-top:36px;">
+          <div class="card" style="display:flex;gap:18px;align-items:flex-start;">
+            <div class="card-icon card-icon--blue" style="flex-shrink:0;margin-bottom:0;">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </div>
+            <div>
+              <div class="card-title">GPS-Based Attendance System</div>
+              <div class="card-desc">Develop a robust geofencing system that automates attendance tracking within school boundaries.</div>
+            </div>
+          </div>
+          <div class="card" style="display:flex;gap:18px;align-items:flex-start;">
+            <div class="card-icon card-icon--teal" style="flex-shrink:0;margin-bottom:0;">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div>
+              <div class="card-title">Digitalize Leave Management</div>
+              <div class="card-desc">Streamline the entire leave application and approval process with a fully digital workflow.</div>
+            </div>
+          </div>
+          <div class="card" style="display:flex;gap:18px;align-items:flex-start;">
+            <div class="card-icon card-icon--emerald" style="flex-shrink:0;margin-bottom:0;">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            </div>
+            <div>
+              <div class="card-title">Real-Time Reporting</div>
+              <div class="card-desc">Generate live reports for administrators to support data-driven decisions and oversight.</div>
+            </div>
+          </div>
+          <div class="card" style="display:flex;gap:18px;align-items:flex-start;">
+            <div class="card-icon card-icon--amber" style="flex-shrink:0;margin-bottom:0;">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div>
+              <div class="card-title">Efficiency &amp; Paperless</div>
+              <div class="card-desc">Improve operational efficiency and reduce paperwork across the school ecosystem.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: HOW IT WORKS -->
+    <div class="slide">
+      <div class="slide-inner animate-stagger">
+        <div>
+          <div class="section-tag">How It Works</div>
+          <h2 class="section-title">Simple, Secure, Seamless</h2>
+          <p class="section-desc">A streamlined flow that makes attendance management effortless for everyone.</p>
+        </div>
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="step-num">1</div>
+            <div class="step-label">Staff Logs In</div>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">Initiate attendance<br>check-in</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="step-num">2</div>
+            <div class="step-label">GPS Verification</div>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">Check geofence<br>boundary</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="step-num">3</div>
+            <div class="step-label">Attendance Recorded</div>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">Saved to secure<br>database</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="step-num">4</div>
+            <div class="step-label">Admin Dashboard</div>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">Monitor, manage,<br>generate reports</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:20px;margin-top:36px;">
+          <div class="card" style="flex:1;text-align:center;">
+            <div class="card-icon card-icon--teal" style="margin:0 auto 12px;">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div class="card-title">Valid Location</div>
+            <div class="card-desc">Attendance is only accepted when the staff device is within the school geofence perimeter.</div>
+          </div>
+          <div class="card" style="flex:1;text-align:center;">
+            <div class="card-icon card-icon--rose" style="margin:0 auto 12px;">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            </div>
+            <div class="card-title">Invalid Location</div>
+            <div class="card-desc">If staff is outside the geofence, check-in is denied to prevent fraudulent attendance.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: KEY INNOVATIONS -->
+    <div class="slide">
+      <div class="slide-inner animate-stagger">
+        <div>
+          <div class="section-tag">Key Innovations</div>
+          <h2 class="section-title">What Sets eHadir@SMKBN Apart</h2>
+          <p class="section-desc">Advanced capabilities that make this solution unique in the education technology space.</p>
+        </div>
+        <div class="innovation-grid">
+          <div class="innovation-item">
+            <div class="inx-icon">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <div><h4>Automated Anomaly Detection</h4><p>AI-powered detection of irregular patterns in attendance behavior for proactive monitoring.</p></div>
+          </div>
+          <div class="innovation-item">
+            <div class="inx-icon">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div><h4>Anti-Buddy Punching</h4><p>Multi-factor verification prevents colleagues from clocking in on behalf of absent staff.</p></div>
+          </div>
+          <div class="innovation-item">
+            <div class="inx-icon">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div><h4>Integrated Platform</h4><p>Attendance and leave management unified in one seamless platform — no need for multiple systems.</p></div>
+          </div>
+          <div class="innovation-item">
+            <div class="inx-icon">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div><h4>Real-Time Dashboard</h4><p>Live monitoring and instant report generation for administrators at any time, from anywhere.</p></div>
+          </div>
+          <div class="innovation-item">
+            <div class="inx-icon">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </div>
+            <div><h4>Multi-Layer Validation</h4><p>GPS, device fingerprinting, and time-based algorithms ensure only legitimate attendance is accepted.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: METHODOLOGY & COMMERCIALIZATION -->
+    <div class="slide">
+      <div class="slide-inner animate-stagger">
+        <div>
+          <div class="section-tag">Methodology &amp; Commercialization</div>
+          <h2 class="section-title">Built Right, Built to Scale</h2>
+          <p class="section-desc">A structured approach from development to market deployment.</p>
+        </div>
+        <div class="method-grid">
+          <div class="method-card">
+            <div class="method-icon card-icon--blue">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            <h4>Methodology: Waterfall</h4>
+            <ul>
+              <li>Requirements analysis and planning</li>
+              <li>System design and architecture</li>
+              <li>Implementation and unit testing</li>
+              <li>Integration and system testing</li>
+              <li>Deployment and maintenance</li>
+            </ul>
+          </div>
+          <div class="method-card">
+            <div class="method-icon card-icon--emerald">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <h4>Commercialization</h4>
+            <ul>
+              <li>Targeting 10,231+ registered schools in Malaysia</li>
+              <li>Government and private school segments</li>
+              <li>SaaS subscription model for attendance &amp; leave</li>
+              <li>Scalable cloud-based infrastructure</li>
+              <li>Ongoing support and feature updates</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: PUBLICATION -->
+    <div class="slide">
+      <div class="slide-inner animate-stagger">
+        <div>
+          <div class="section-tag">Publication</div>
+          <h2 class="section-title">Sharing Knowledge with the World</h2>
+          <p class="section-desc">Contributing research findings to advance smart attendance solutions in education.</p>
+        </div>
+        <div style="max-width:600px; margin:36px auto 0; text-align:center;">
+          <div class="card" style="padding:40px 32px;">
+            <div class="card-icon card-icon--blue" style="margin:0 auto 16px; width:56px; height:56px; font-size:28px;">
+              <svg class="svg-icon svg-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </div>
+            <h4 style="font-size:20px; font-weight:700; margin-bottom:12px; color:var(--accent);">
+              AITCS Proceedings
+            </h4>
+            <p style="font-size:15px; color:var(--text-secondary); line-height:1.6;">
+              This innovation is planned for submission to the <strong style="color:var(--text-primary);">Applied Information Technology and Computer Science (AITCS)</strong> Proceeding to share research findings and support the adoption of smart attendance solutions in educational institutions.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: EXPECTED IMPACT -->
+    <div class="slide">
+      <div class="slide-inner animate-stagger">
+        <div>
+          <div class="section-tag">Expected Impact</div>
+          <h2 class="section-title">Meaningful Change for Education</h2>
+          <p class="section-desc">The tangible outcomes eHadir@SMKBN will deliver to schools and the education system.</p>
+        </div>
+        <div class="impact-grid">
+          <div class="impact-card">
+            <div class="impact-icon card-icon--teal">
+              <svg class="svg-icon svg-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <h4>Reduce Administrator Workload</h4>
+            <p>Automation cuts manual processing time, freeing administrators to focus on strategic priorities.</p>
+          </div>
+          <div class="impact-card">
+            <div class="impact-icon card-icon--rose">
+              <svg class="svg-icon svg-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+            </div>
+            <h4>Eliminate Fraudulent Attendance</h4>
+            <p>GPS verification and multi-layer validation completely removes proxy and buddy-punching incidents.</p>
+          </div>
+          <div class="impact-card">
+            <div class="impact-icon card-icon--blue">
+              <svg class="svg-icon svg-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <h4>Modernize School Processes</h4>
+            <p>Bring schools into the digital age with modern, mobile-first tools that replace outdated manual systems.</p>
+          </div>
+          <div class="impact-card">
+            <div class="impact-icon card-icon--emerald">
+              <svg class="svg-icon svg-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <h4>Support Digital Transformation</h4>
+            <p>Contribute to Malaysia's education digitization agenda with scalable, proven technology solutions.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 9: THANK YOU -->
+    <div class="slide thank-you">
+      <div class="slide-inner" style="text-align:center;">
+        <img class="hero-logo" src="SMKBN_Transparent.png" alt="eHadir@SMKBN Logo" />
+        <div style="animation: fadeInUp 0.6s ease-out;">
+          <div class="title-badge" style="margin:0 auto 28px;">
+            <span class="dot"></span> Thank You
+          </div>
+          <h2><span class="accent">eHadir</span>@SMKBN</h2>
+          <p>Smart Attendance • Smarter Schools</p>
+        </div>
+        <div style="display:flex;gap:40px;justify-content:center;margin-top:48px;animation: fadeInUp 0.6s 0.2s ease-out both;">
+          <div class="title-stat"><div class="num">10,231+</div><div class="lbl">Target Schools</div></div>
+          <div class="title-stat"><div class="num">SaaS</div><div class="lbl">Business Model</div></div>
+          <div class="title-stat"><div class="num">AITCS</div><div class="lbl">Publication</div></div>
+        </div>
+        <p style="margin-top:48px; font-size:14px; color:var(--text-muted); animation: fadeInUp 0.6s 0.4s ease-out both;">
+          Revolutionizing attendance management in Malaysian schools
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const progressBar = document.getElementById('progressBar');
+  const slideCounter = document.getElementById('slideCounter');
+  const totalSlides = slides.length;
+  let currentSlide = 0;
+  let autoPlayTimer;
+  const SLIDE_DURATION = 6000; // 6 seconds per slide
+  const TRANSITION_DURATION = 400;
+
+  // Build progress dots
+  for (let i = 0; i < totalSlides; i++) {
+    const dot = document.createElement('span');
+    dot.className = 'progress-dot' + (i === 0 ? ' active' : '');
+    dot.title = 'Slide ' + (i + 1);
+    dot.addEventListener('click', () => goToSlide(i));
+    progressBar.appendChild(dot);
+  }
+  const dots = progressBar.querySelectorAll('.progress-dot');
+
+  function updateCounter() {
+    slideCounter.textContent = (currentSlide + 1) + ' / ' + totalSlides;
+  }
+
+  function goToSlide(index) {
+    if (index === currentSlide || index < 0 || index >= totalSlides) return;
+
+    const oldSlide = slides[currentSlide];
+    const newSlide = slides[index];
+
+    // Exit old slide
+    oldSlide.classList.remove('active');
+    oldSlide.classList.add('exit');
+
+    // Update dots
+    dots[currentSlide].classList.remove('active');
+    dots[currentSlide].classList.add('done');
+
+    // Enter new slide
+    newSlide.classList.remove('exit');
+    newSlide.classList.add('active');
+    dots[index].classList.add('active');
+    dots[index].classList.remove('done');
+
+    currentSlide = index;
+    updateCounter();
+
+    // Clear exit class after transition
+    setTimeout(() => oldSlide.classList.remove('exit'), TRANSITION_DURATION);
+
+    resetTimer();
+  }
+
+  function nextSlide() {
+    const next = (currentSlide + 1) % totalSlides;
+    goToSlide(next);
+  }
+
+  function resetTimer() {
+    clearInterval(autoPlayTimer);
+    autoPlayTimer = setInterval(nextSlide, SLIDE_DURATION);
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      nextSlide();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = (currentSlide - 1 + totalSlides) % totalSlides;
+      goToSlide(prev);
+    }
+  });
+
+  // Touch swipe support
+  let touchStartX = 0;
+  let touchStartY = 0;
+  document.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) nextSlide();
+      else {
+        const prev = (currentSlide - 1 + totalSlides) % totalSlides;
+        goToSlide(prev);
+      }
+    }
+  });
+
+  // Initialize
+  updateCounter();
+
+  // Delay start to let first animation play
+  setTimeout(() => {
+    autoPlayTimer = setInterval(nextSlide, SLIDE_DURATION);
+  }, 2000);
+})();
+</script>
+
+</body>
+</html>
